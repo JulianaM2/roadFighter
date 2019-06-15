@@ -4,10 +4,10 @@ This a simple game of python with computer vision.
 It is a new version of Road Fighter, but you move the car through a color object that is detected by the camera.
 The images that you are going to find in the repository were taken from Google, they are not mine.
 
-You need the following libries of python:
+You need the following libraries of python:
 - OpenCV
 - Numpy
-- imutis
+- imutils
 - Random
 - Time
 
