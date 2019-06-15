@@ -5,14 +5,14 @@ import random
 import time
 
 def drawCarOnRoad(principalFrame, car, centerWidth, centerHeight, width, height):
-     roiCar = principalFrame[centerHeight:centerHeight+height, centerWidth:centerWidth+width]
+     roiCar = principalFrame[centerHeight:centerHeight+height, centerWidth:centerWidth+width] #The position where the car is going to be on the principal frame
      car2gray = cv2.cvtColor(car,cv2.COLOR_BGR2GRAY)
-     ret, maskCar = cv2.threshold(car2gray, 10, 255, cv2.THRESH_BINARY)
-     maskCarInv = cv2.bitwise_not(maskCar)   
-     car_bg = cv2.bitwise_and(roiCar, roiCar, mask = maskCarInv)
+     ret, maskCar = cv2.threshold(car2gray, 10, 255, cv2.THRESH_BINARY) #create mask of the image 
+     maskCarInv = cv2.bitwise_not(maskCar)   # create the inverse mask
+     car_bg = cv2.bitwise_and(roiCar, roiCar, mask = maskCarInv) 
      car_fg = cv2.bitwise_and(car, car, mask = maskCar)
-     dstCar = cv2.add(car_bg, car_fg)
-     principalFrame[centerHeight:centerHeight+height, centerWidth:centerWidth+width] = dstCar
+     dstCar = cv2.add(car_bg, car_fg) #Put the car in roi
+     principalFrame[centerHeight:centerHeight+height, centerWidth:centerWidth+width] = dstCar #Modify the principal frame
      
 
 
@@ -22,9 +22,9 @@ cam = cv2.VideoCapture(0)
 #lowerBound = np.array([82,51,51])
 #upperBound = np.array([133,255,255])
 
-#Yellow
-#lowerBound = np.array([56,100,50])
-#upperBound = np.array([60,100,60])
+#Red
+#lowerBound = np.array([161, 155, 84])
+#upperBound = np.array([179, 255, 255])
 
 #Green
 lowerBound = np.array([25, 52, 72])
@@ -49,15 +49,19 @@ blueCar = cv2.resize(blueCar,(width,height))
 yellowCar = cv2.imread('yellowCar.png')
 yellowCar = cv2.resize(yellowCar,(width,height))
 
+greenCar = cv2.imread('greenCar.png')
+greenCar = cv2.resize(greenCar,(width,height))
+
+
 listCenter = []
 listVelocity = []
+factorOfVelocity = 1
 
-
-for i in range(3):
+for i in range(4):
     centerRandom = (random.randint(100,360), 0)
     listCenter.append(centerRandom)
 
-    velocity = random.randint(3,8)
+    velocity = random.randint(3,5)
     listVelocity.append(velocity)
     
 execute = True
@@ -74,11 +78,12 @@ while execute:
     mask = cv2.erode(mask, None, iterations=2)
     mask = cv2.dilate(mask, None, iterations=2)
     
-    contorno = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contorno = imutils.grab_contours(contorno)
+    #Get the countour of the object
+    contour = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contour = imutils.grab_contours(contour)
    
-    if(len(contorno) > 0):
-        c = max(contorno, key=cv2.contourArea)
+    if(len(contour) > 0):
+        c = max(contour, key=cv2.contourArea)
         ((x, y), radius) = cv2.minEnclosingCircle(c)
         M = cv2.moments(c)
         centerOfWhiteCar = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
@@ -103,10 +108,12 @@ while execute:
             centerOfWhiteCar = (360,500)
         #End if
         
+        #Draw the cars that you want to put on the road
         drawCarOnRoad(roadFighter, car, centerOfWhiteCar[0], 500, width, height)
         drawCarOnRoad(roadFighter, blueCar, listCenter[0][0], listCenter[0][1], width, height)
         drawCarOnRoad(roadFighter, redCar, listCenter[1][0], listCenter[1][1], width, height)
         drawCarOnRoad(roadFighter, yellowCar, listCenter[2][0], listCenter[2][1], width, height)
+        drawCarOnRoad(roadFighter, greenCar, listCenter[3][0], listCenter[3][1], width, height)
         
         for i in range(len(listCenter)):
             
@@ -114,17 +121,20 @@ while execute:
             if(listCenter[i][1] > 500):
                 listCenter[i] = (random.randint(100,360), 0)
                 points += 15*listVelocity[i]
-                listVelocity[i] = random.randint(3,15)
+                listVelocity[i] = random.randint(3,5)
+                
 
-            else: 
+            else:      
+                if(points > 1000 and factorOfVelocity <= 6):
+                    factorOfVelocity = points//1000
                 time.sleep(0.0016)
-                listCenter[i] = (listCenter[i][0],listCenter[i][1]+listVelocity[i])
+                listCenter[i] = (listCenter[i][0],listCenter[i][1]+listVelocity[i]*factorOfVelocity)
             #End if
         # End for
     #End if
     
         for i in range(len(listCenter)):
-           if((-45 < centerOfWhiteCar[0] - listCenter[i][0] and centerOfWhiteCar[0] - listCenter[i][0] < 45) and listCenter[i][1] >= 430):
+           if(abs(centerOfWhiteCar[0] - listCenter[i][0]) < width - 5 and listCenter[i][1] >= 450):
               
                while True:
                    gameover = cv2.imread('gameover.png')
@@ -142,7 +152,7 @@ while execute:
                
     cv2.putText(roadFighter, "POINTS: "+ str(points), (180,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2) 
     cv2.imshow('Road Fighter',roadFighter) 
-    
+    print(factorOfVelocity)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     #End if
