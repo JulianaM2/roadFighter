@@ -1,6 +1,6 @@
 # roadFighter
 
-This a simple game built in python with computer vision.
+This is a simple game built in python with computer vision.
 It is a new version of Road Fighter, but you move the car through a color object that is detected by the camera.
 
 The images that you are going to find in the repository were taken from Google, they are not mine.
